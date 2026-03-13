@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COPA — Constrained Opportunity Positioning Analysis</title>
+<style>
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f5f7fa;
+  color: #222;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 820px;
+  margin: auto;
+  padding: 40px 20px 80px;
+}
+
+/* ── Header ── */
+header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+header h1 {
+  font-size: 30px;
+  letter-spacing: 2px;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+header .version {
+  font-size: 12px;
+  color: #888;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+header .tagline {
+  font-size: 15px;
+  color: #555;
+}
+.back-link {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: #0066cc;
+  text-decoration: none;
+  font-size: 14px;
+}
+.back-link:hover { text-decoration: underline; }
+
+/* ── Progress bar ── */
+.progress-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 36px;
+}
+.progress-step {
+  flex: 1;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  transition: background 0.3s;
+}
+.progress-step.active { background: #1a1a2e; }
+.progress-step.done   { background: #555; }
+
+/* ── Phase label ── */
+.phase-label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 6px;
+}
+.phase-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 10px;
+}
+
+/* ── Form panels ── */
+.panel {
+  display: none;
+}
+.panel.active {
+  display: block;
+}
+
+/* ── Field groups ── */
+.field {
+  margin-bottom: 22px;
+}
+.field label {
+  display: block;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.field .field-note {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+}
+.field input[type="text"],
+.field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  resize: vertical;
+}
+.field input[type="text"]:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #1a1a2e;
+}
+
+/* ── Radio groups ── */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.2s, background 0.2s;
+}
+.radio-option:hover {
+  border-color: #aaa;
+}
+.radio-option input[type="radio"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: #1a1a2e;
+}
+.radio-option .opt-label {
+  font-weight: bold;
+  font-size: 14px;
+}
+.radio-option .opt-desc {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+.radio-option.selected {
+  border-color: #1a1a2e;
+  background: #f0f0f5;
+}
+
+/* ── Halt banner ── */
+.halt-banner {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 20px 24px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+}
+.halt-banner .halt-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+.halt-banner .halt-reason {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* ── Buttons ── */
+.btn-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+}
+button {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-family: inherit;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.btn-back {
+  background: transparent;
+  color: #555;
+  border: 1px solid #ccc;
+}
+.btn-back:hover { background: #eee; }
+.btn-next {
+  background: #1a1a2e;
+  color: #fff;
+}
+.btn-next:hover { background: #2d2d50; }
+.btn-run {
+  background: #1a1a2e;
+  color: #fff;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.btn-run:hover { background: #2d2d50; }
+.btn-reset {
+  background: transparent;
+  color: #555;
+  border: 1px solid #ccc;
+  font-size: 13px;
+}
+.btn-reset:hover { background: #eee; }
+
+/* ── Output / Decision Artifact ── */
+#output-panel {
+  display: none;
+}
+
+.artifact-header {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 24px 28px;
+  border-radius: 8px 8px 0 0;
+}
+.artifact-header .artifact-type {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+.artifact-header .artifact-asset {
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+.artifact-header .artifact-segment {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.artifact-body {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+/* Instrument panel */
+.instrument-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 2px solid #eee;
+}
+.instrument-cell {
+  padding: 18px 20px;
+  border-right: 1px solid #eee;
+}
+.instrument-cell:last-child { border-right: none; }
+.instrument-cell .ic-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 6px;
+}
+.instrument-cell .ic-value {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+.instrument-cell .ic-value.positive { color: #2a7a2a; }
+.instrument-cell .ic-value.neutral  { color: #7a6a00; }
+.instrument-cell .ic-value.negative { color: #8a1a1a; }
+.instrument-cell .ic-value.halt     { color: #8a1a1a; }
+.instrument-cell .ic-sub {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* Sections within artifact body */
+.artifact-section {
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+.artifact-section:last-child { border-bottom: none; }
+.artifact-section .as-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 10px;
+}
+
+/* Action buckets */
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.action-item.admissible {
+  background: #edf7ed;
+  border: 1px solid #a3d9a3;
+  font-weight: bold;
+  color: #1a4d1a;
+}
+.action-item.eliminated {
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  color: #bbb;
+  text-decoration: line-through;
+}
+.action-item .action-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.action-item.admissible .action-dot { background: #2a7a2a; }
+.action-item.eliminated .action-dot { background: #ccc; }
+
+/* Drivers list */
+.driver-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.driver-list li {
+  font-size: 13px;
+  padding-left: 16px;
+  position: relative;
+  color: #333;
+}
+.driver-list li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: #999;
+}
+
+/* Change triggers */
+.trigger-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.trigger-list li {
+  font-size: 13px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-left: 3px solid #ccc;
+  color: #444;
+}
+
+/* Constraint log */
+.constraint-log {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.8;
+}
+.constraint-log .clog-pass  { color: #2a7a2a; }
+.constraint-log .clog-flag  { color: #7a4000; }
+.constraint-log .clog-halt  { color: #8a1a1a; font-weight: bold; }
+
+/* Incompatibility notice */
+.incompatibility-notice {
+  background: #fff8f0;
+  border: 1px solid #e8c07a;
+  border-radius: 4px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #6b4a00;
+  margin-top: 10px;
+}
+
+/* Boundary footer */
+.artifact-footer {
+  text-align: center;
+  font-size: 11px;
+  color: #aaa;
+  padding: 16px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Error state ── */
+.field-error {
+  border-color: #cc3333 !important;
+}
+.error-msg {
+  font-size: 12px;
+  color: #cc3333;
+  margin-top: 4px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .instrument-panel { grid-template-columns: 1fr; }
+  .instrument-cell { border-right: none; border-bottom: 1px solid #eee; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <a href="index.html" class="back-link">← Firestrike Productions</a>
+
+  <header>
+    <div class="version">v2.0</div>
+    <h1>COPA</h1>
+    <div class="tagline">Constrained Opportunity Positioning Analysis</div>
+  </header>
+
+  <!-- Progress -->
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-step active" data-step="1"></div>
+    <div class="progress-step" data-step="2"></div>
+    <div class="progress-step" data-step="3"></div>
+    <div class="progress-step" data-step="4"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       PANEL 1 — ASSET INPUT
+  ════════════════════════════════════════ -->
+  <div class="panel active" id="panel-1">
+    <div class="phase-label">Step 1 of 4</div>
+    <div class="phase-title">Asset Input</div>
+
+    <div class="field">
+      <label>Asset Identifier <span style="color:#cc3333">*</span></label>
+      <div class="field-note">Ticker symbol or name (e.g. NVDA, QQQ, BRK.B)</div>
+      <input type="text" id="asset-id" placeholder="e.g. NVDA" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Segment / Category <span style="color:#cc3333">*</span></label>
+      <div class="field-note">Broad sector or thematic category (e.g. Semiconductors, Long-Duration Bonds, Emerging Market Equity)</div>
+      <input type="text" id="asset-segment" placeholder="e.g. Semiconductors — AI Infrastructure">
+    </div>
+
+    <div class="field">
+      <label>Current Price Context</label>
+      <div class="field-note">Optional. Brief note on where price sits relative to recent range (e.g. near 52-week high, off 15% from peak).</div>
+      <input type="text" id="asset-price-context" placeholder="e.g. Near 52-week high after 40% YTD run">
+    </div>
+
+    <div class="field">
+      <label>Recent Narrative Drivers</label>
+      <div class="field-note">Optional. Key headlines or themes active around this asset right now.</div>
+      <textarea id="asset-narrative" rows="3" placeholder="e.g. Earnings beat, increased capex guidance, sector rotation into AI infrastructure"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-next" onclick="goTo(2)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       PANEL 2 — INVESTOR CONSTRAINT PROFILE
+  ════════════════════════════════════════ -->
+  <div class="panel" id="panel-2">
+    <div class="phase-label">Step 2 of 4</div>
+    <div class="phase-title">Investor Constraint Profile</div>
+    <p style="font-size:13px;color:#666;margin-top:-12px;margin-bottom:24px;">
+      All fields marked * are required. Profile inputs do not change market truth — they only determine whether and how you can participate.
+    </p>
+
+    <!-- Time Horizon -->
+    <div class="field" id="field-horizon">
+      <label>Holding Horizon <span style="color:#cc3333">*</span></label>
+      <div class="field-note">How long do you intend to hold this position, assuming the thesis remains intact?</div>
+      <div class="radio-group" id="rg-horizon">
+        <label class="radio-option">
+          <input type="radio" name="horizon" value="short">
+          <div>
+            <div class="opt-label">Short — under 3 months</div>
+            <div class="opt-desc">Timing-sensitive. Near-term volatility is signal, not noise.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="horizon" value="mid">
+          <div>
+            <div class="opt-label">Mid — 3 to 12 months</div>
+            <div class="opt-desc">Moderate tolerance for drawdowns. Entry matters but is not make-or-break.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="horizon" value="long">
+          <div>
+            <div class="opt-label">Long — 12+ months</div>
+            <div class="opt-desc">Near-term noise is largely irrelevant. Structural slope dominates.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Position Intent -->
+    <div class="field" id="field-intent">
+      <label>Position Intent <span style="color:#cc3333">*</span></label>
+      <div class="field-note">Is this a foundational allocation or a tactical trade?</div>
+      <div class="radio-group" id="rg-intent">
+        <label class="radio-option">
+          <input type="radio" name="intent" value="foundational">
+          <div>
+            <div class="opt-label">Foundational</div>
+            <div class="opt-desc">Part of a broader thesis or allocation. Entry precision is helpful but not critical.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="intent" value="tactical">
+          <div>
+            <div class="opt-label">Tactical</div>
+            <div class="opt-desc">Entry-dependent. Return is sensitive to timing. Wrong entry materially degrades outcome.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Drawdown Tolerance -->
+    <div class="field" id="field-drawdown">
+      <label>Drawdown Tolerance <span style="color:#cc3333">*</span></label>
+      <div class="field-note">Maximum temporary loss you can tolerate without abandoning the position, even if it eventually recovers.</div>
+      <div class="radio-group" id="rg-drawdown">
+        <label class="radio-option">
+          <input type="radio" name="drawdown" value="low">
+          <div>
+            <div class="opt-label">Low — ~5 to 10%</div>
+            <div class="opt-desc">Will exit or become destabilized by normal drawdowns exceeding 10%.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="drawdown" value="medium">
+          <div>
+            <div class="opt-label">Medium — ~10 to 25%</div>
+            <div class="opt-desc">Can hold through significant pullbacks without forced action.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="drawdown" value="high">
+          <div>
+            <div class="opt-label">High — 25%+</div>
+            <div class="opt-desc">Position sizing and conviction support deep drawdowns.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Account Type (optional) -->
+    <div class="field">
+      <label>Account Type <span style="font-weight:normal;color:#888">(optional)</span></label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="account" value="taxable">
+          <div>
+            <div class="opt-label">Taxable</div>
+            <div class="opt-desc">Exits and rebalancing carry tax friction. Increases holding cost.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="account" value="advantaged">
+          <div>
+            <div class="opt-label">Tax-Advantaged (IRA, 401k, etc.)</div>
+            <div class="opt-desc">No tax friction on exits. Timing decisions are cleaner.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="account" value="unspecified" checked>
+          <div>
+            <div class="opt-label">Not specified</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Income vs Growth (optional) -->
+    <div class="field">
+      <label>Orientation <span style="font-weight:normal;color:#888">(optional)</span></label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="orientation" value="growth">
+          <div>
+            <div class="opt-label">Growth</div>
+            <div class="opt-desc">Sensitive to opportunity cost. Flat price action is a negative signal.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="orientation" value="income">
+          <div>
+            <div class="opt-label">Income</div>
+            <div class="opt-desc">Tolerates flat price if yield or income is delivered.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="orientation" value="neutral" checked>
+          <div>
+            <div class="opt-label">Neutral / Mixed</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-back" onclick="goTo(1)">← Back</button>
+      <button class="btn-next" onclick="goTo(3)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       PANEL 3 — MARKET ASSESSMENT
+  ════════════════════════════════════════ -->
+  <div class="panel" id="panel-3">
+    <div class="phase-label">Step 3 of 4</div>
+    <div class="phase-title">Market Assessment</div>
+    <p style="font-size:13px;color:#666;margin-top:-12px;margin-bottom:24px;">
+      Provide your assessment of the segment and asset. These inputs determine trajectory — they are invariant to your profile.
+    </p>
+
+    <!-- Segment Slope -->
+    <div class="field" id="field-slope">
+      <label>Segment Slope <span style="color:#cc3333">*</span></label>
+      <div class="field-note">What is the structural direction of this segment? Consider historical directionality, policy tailwinds/headwinds, capital flows, and cycle maturity.</div>
+      <div class="radio-group" id="rg-slope">
+        <label class="radio-option">
+          <input type="radio" name="slope" value="positive">
+          <div>
+            <div class="opt-label">Positive</div>
+            <div class="opt-desc">Structural drivers are intact. Segment has room to run. Early or mid-cycle evidence of continuation.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="slope" value="neutral">
+          <div>
+            <div class="opt-label">Neutral</div>
+            <div class="opt-desc">Mixed signals. No clear directional driver. Chop or consolidation.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="slope" value="negative">
+          <div>
+            <div class="opt-label">Negative</div>
+            <div class="opt-desc">Structural deterioration. Headwinds dominate. Late-cycle or exhaustion evidence.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Asset Position vs Slope -->
+    <div class="field" id="field-position">
+      <label>Asset Position vs Segment Slope <span style="color:#cc3333">*</span></label>
+      <div class="field-note">Where does the asset sit relative to its segment's trajectory?</div>
+      <div class="radio-group" id="rg-position">
+        <label class="radio-option">
+          <input type="radio" name="position" value="above">
+          <div>
+            <div class="opt-label">Above Slope — priced ahead</div>
+            <div class="opt-desc">Expectations are pulled forward. Asset has run faster than the segment. Potential mean-reversion risk.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="position" value="on">
+          <div>
+            <div class="opt-label">On Slope — tracking structural direction</div>
+            <div class="opt-desc">Asset moves in line with the segment. No significant premium or discount.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="position" value="below">
+          <div>
+            <div class="opt-label">Below Slope — lagging / catch-up potential</div>
+            <div class="opt-desc">Asset has underperformed its segment. Potential for compression to segment slope.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Expected Asset Volatility -->
+    <div class="field" id="field-volatility">
+      <label>Expected Asset Volatility <span style="color:#cc3333">*</span></label>
+      <div class="field-note">Based on the asset's history and current conditions, what level of intra-period drawdown is structurally normal for this holding?</div>
+      <div class="radio-group" id="rg-volatility">
+        <label class="radio-option">
+          <input type="radio" name="volatility" value="low">
+          <div>
+            <div class="opt-label">Low — typical drawdowns under 10%</div>
+            <div class="opt-desc">Stable instruments: broad bond funds, low-vol equity, blue-chip dividend payers.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="volatility" value="medium">
+          <div>
+            <div class="opt-label">Medium — typical drawdowns 10–25%</div>
+            <div class="opt-desc">Broad equity ETFs, sector funds, most large-cap stocks.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="volatility" value="high">
+          <div>
+            <div class="opt-label">High — typical drawdowns 25%+</div>
+            <div class="opt-desc">Single-stock names, leveraged ETFs, speculative growth, crypto-adjacent.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Recency / Timing Context -->
+    <div class="field" id="field-recency">
+      <label>Recency Context <span style="color:#cc3333">*</span></label>
+      <div class="field-note">How would you characterize the asset's most recent price action and narrative intensity?</div>
+      <div class="radio-group" id="rg-recency">
+        <label class="radio-option">
+          <input type="radio" name="recency" value="extended">
+          <div>
+            <div class="opt-label">Extended — significant recent run-up</div>
+            <div class="opt-desc">Asset has made a sharp move recently. Narrative is hot. Chasing risk is elevated.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="recency" value="normal">
+          <div>
+            <div class="opt-label">Normal — orderly movement</div>
+            <div class="opt-desc">No unusual acceleration. Price action is consistent with segment slope.</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="recency" value="compressed">
+          <div>
+            <div class="opt-label">Compressed — recent pullback or consolidation</div>
+            <div class="opt-desc">Asset has pulled back or is consolidating. Potential entry window.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-back" onclick="goTo(2)">← Back</button>
+      <button class="btn-next" onclick="goTo(4)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       PANEL 4 — REVIEW & RUN
+  ════════════════════════════════════════ -->
+  <div class="panel" id="panel-4">
+    <div class="phase-label">Step 4 of 4</div>
+    <div class="phase-title">Review & Run COPA</div>
+
+    <div id="review-summary" style="font-size:13px;line-height:2;color:#444;margin-bottom:24px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:20px 24px;"></div>
+
+    <p style="font-size:13px;color:#666;margin-bottom:20px;">
+      COPA will apply the decision framework to your inputs and produce a decision artifact. No predictions. No recommendations. Only admissible actions under your constraints.
+    </p>
+
+    <div class="btn-row">
+      <button class="btn-back" onclick="goTo(3)">← Back</button>
+      <button class="btn-run" onclick="runCOPA()">Run COPA →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       OUTPUT — DECISION ARTIFACT
+  ════════════════════════════════════════ -->
+  <div id="output-panel">
+
+    <div id="halt-display" style="display:none;">
+      <!-- Populated by JS if halt condition -->
+    </div>
+
+    <div id="artifact-display" style="display:none;">
+
+      <div class="artifact-header">
+        <div class="artifact-type">COPA Decision Artifact — v2.0</div>
+        <div class="artifact-asset" id="out-asset"></div>
+        <div class="artifact-segment" id="out-segment"></div>
+      </div>
+
+      <div class="artifact-body">
+
+        <!-- Instrument Panel -->
+        <div class="instrument-panel">
+          <div class="instrument-cell">
+            <div class="ic-label">Trajectory Verdict</div>
+            <div class="ic-value" id="out-trajectory"></div>
+            <div class="ic-sub" id="out-trajectory-sub"></div>
+          </div>
+          <div class="instrument-cell">
+            <div class="ic-label">Asset Position</div>
+            <div class="ic-value" id="out-position-display"></div>
+            <div class="ic-sub" id="out-position-sub"></div>
+          </div>
+          <div class="instrument-cell">
+            <div class="ic-label">Time Posture</div>
+            <div class="ic-value" id="out-time-posture"></div>
+            <div class="ic-sub" id="out-time-sub"></div>
+          </div>
+        </div>
+
+        <!-- Admissible Actions -->
+        <div class="artifact-section">
+          <div class="as-label">Admissible Action Space</div>
+          <div class="action-list" id="out-actions"></div>
+          <div id="out-incompatibility"></div>
+        </div>
+
+        <!-- Constraint Log -->
+        <div class="artifact-section">
+          <div class="as-label">Constraint Gate Log</div>
+          <div class="constraint-log" id="out-constraint-log"></div>
+        </div>
+
+        <!-- Key Drivers -->
+        <div class="artifact-section">
+          <div class="as-label">Structural Drivers Active</div>
+          <ul class="driver-list" id="out-drivers"></ul>
+        </div>
+
+        <!-- What Would Change This -->
+        <div class="artifact-section">
+          <div class="as-label">What Would Change This</div>
+          <ul class="trigger-list" id="out-triggers"></ul>
+        </div>
+
+      </div>
+
+      <div class="artifact-footer">
+        This is a decision artifact, not a prediction or a recommendation. COPA determines admissibility — not outcome.
+      </div>
+
+    </div>
+
+    <div class="btn-row" style="margin-top:28px;">
+      <button class="btn-reset" onclick="resetCOPA()">← Start Over</button>
+    </div>
+
+  </div>
+
+</div><!-- /container -->
+
+<script>
+
+// ── State ──────────────────────────────────────────
+const state = {
+  assetId: '',
+  assetSegment: '',
+  priceContext: '',
+  narrative: '',
+  horizon: '',
+  intent: '',
+  drawdown: '',
+  account: 'unspecified',
+  orientation: 'neutral',
+  slope: '',
+  position: '',
+  volatility: '',
+  recency: ''
+};
+
+// ── Navigation ─────────────────────────────────────
+function goTo(step) {
+  if (step > 1 && !validatePanel(currentStep())) return;
+
+  // Update progress bar
+  document.querySelectorAll('.progress-step').forEach((el, i) => {
+    const s = i + 1;
+    el.classList.remove('active', 'done');
+    if (s < step) el.classList.add('done');
+    else if (s === step) el.classList.add('active');
+  });
+
+  // Hide/show panels
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + step);
+  if (panel) panel.classList.add('active');
+
+  // If going to review panel, populate summary
+  if (step === 4) buildReviewSummary();
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function currentStep() {
+  const active = document.querySelector('.panel.active');
+  if (!active) return 1;
+  return parseInt(active.id.replace('panel-', ''));
+}
+
+// ── Validation ─────────────────────────────────────
+function validatePanel(step) {
+  let ok = true;
+
+  if (step === 1) {
+    const id = document.getElementById('asset-id').value.trim();
+    const seg = document.getElementById('asset-segment').value.trim();
+    ok = requireText('asset-id', id) & requireText('asset-segment', seg);
+  }
+
+  if (step === 2) {
+    ok = requireRadio('rg-horizon', 'field-horizon')
+       & requireRadio('rg-intent', 'field-intent')
+       & requireRadio('rg-drawdown', 'field-drawdown');
+  }
+
+  if (step === 3) {
+    ok = requireRadio('rg-slope', 'field-slope')
+       & requireRadio('rg-position', 'field-position')
+       & requireRadio('rg-volatility', 'field-volatility')
+       & requireRadio('rg-recency', 'field-recency');
+  }
+
+  return !!ok;
+}
+
+function requireText(id, val) {
+  const el = document.getElementById(id);
+  clearErr(el);
+  if (!val) {
+    el.classList.add('field-error');
+    const err = document.createElement('div');
+    err.className = 'error-msg';
+    err.textContent = 'This field is required.';
+    el.parentNode.appendChild(err);
+    return false;
+  }
+  return true;
+}
+
+function requireRadio(groupId, fieldId) {
+  const group = document.getElementById(groupId);
+  const selected = group.querySelector('input[type="radio"]:checked');
+  const field = document.getElementById(fieldId);
+  // Remove any prior error on that field
+  const prior = field.querySelector('.error-msg');
+  if (prior) prior.remove();
+  if (!selected) {
+    const err = document.createElement('div');
+    err.className = 'error-msg';
+    err.textContent = 'Selection required.';
+    field.appendChild(err);
+    return false;
+  }
+  return true;
+}
+
+function clearErr(el) {
+  el.classList.remove('field-error');
+  const sib = el.parentNode.querySelector('.error-msg');
+  if (sib) sib.remove();
+}
+
+// ── Collect state ──────────────────────────────────
+function collectState() {
+  state.assetId      = document.getElementById('asset-id').value.trim();
+  state.assetSegment = document.getElementById('asset-segment').value.trim();
+  state.priceContext = document.getElementById('asset-price-context').value.trim();
+  state.narrative    = document.getElementById('asset-narrative').value.trim();
+
+  state.horizon     = getRadio('horizon');
+  state.intent      = getRadio('intent');
+  state.drawdown    = getRadio('drawdown');
+  state.account     = getRadio('account') || 'unspecified';
+  state.orientation = getRadio('orientation') || 'neutral';
+
+  state.slope      = getRadio('slope');
+  state.position   = getRadio('position');
+  state.volatility = getRadio('volatility');
+  state.recency    = getRadio('recency');
+}
+
+function getRadio(name) {
+  const el = document.querySelector('input[name="' + name + '"]:checked');
+  return el ? el.value : '';
+}
+
+// ── Review Summary ─────────────────────────────────
+function buildReviewSummary() {
+  collectState();
+  const horizonLabel   = { short: 'Short (<3 months)', mid: 'Mid (3–12 months)', long: 'Long (12+ months)' };
+  const intentLabel    = { foundational: 'Foundational', tactical: 'Tactical' };
+  const drawdownLabel  = { low: 'Low (~5–10%)', medium: 'Medium (~10–25%)', high: 'High (25%+)' };
+  const accountLabel   = { taxable: 'Taxable', advantaged: 'Tax-Advantaged', unspecified: 'Not specified' };
+  const oriLabel       = { growth: 'Growth', income: 'Income', neutral: 'Neutral / Mixed' };
+  const slopeLabel     = { positive: 'Positive', neutral: 'Neutral', negative: 'Negative' };
+  const posLabel       = { above: 'Above slope', on: 'On slope', below: 'Below slope' };
+  const volLabel       = { low: 'Low', medium: 'Medium', high: 'High' };
+  const recLabel       = { extended: 'Extended (run-up)', normal: 'Normal', compressed: 'Compressed (pullback)' };
+
+  document.getElementById('review-summary').innerHTML =
+    row('Asset', state.assetId) +
+    row('Segment', state.assetSegment) +
+    (state.priceContext ? row('Price Context', state.priceContext) : '') +
+    row('Horizon', horizonLabel[state.horizon] || '—') +
+    row('Position Intent', intentLabel[state.intent] || '—') +
+    row('Drawdown Tolerance', drawdownLabel[state.drawdown] || '—') +
+    row('Account Type', accountLabel[state.account] || '—') +
+    row('Orientation', oriLabel[state.orientation] || '—') +
+    row('Segment Slope', slopeLabel[state.slope] || '—') +
+    row('Asset Position', posLabel[state.position] || '—') +
+    row('Expected Volatility', volLabel[state.volatility] || '—') +
+    row('Recency Context', recLabel[state.recency] || '—');
+}
+
+function row(label, val) {
+  return '<div><strong>' + label + ':</strong> ' + (val || '—') + '</div>';
+}
+
+// ── COPA Decision Logic ────────────────────────────
+function runCOPA() {
+  collectState();
+
+  const result = computeCOPA(state);
+
+  // Hide form panels & progress
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('progress-bar').style.display = 'none';
+
+  renderOutput(result);
+}
+
+function computeCOPA(s) {
+  const log = [];
+  const allActions = ['Buy now', 'Buy on pullback', 'Hold / Watch', 'Do not buy'];
+  let eliminated = new Set();
+  let halted = false;
+  let haltReason = '';
+  let incompatibilities = [];
+
+  // ── STEP 1: Segment Slope ───────────────────────
+  if (s.slope === 'negative') {
+    halted = true;
+    haltReason = 'Segment slope is Negative. No money is structurally available. COPA halts.';
+    log.push({ type: 'halt', msg: 'Segment slope: NEGATIVE → COPA halts. All buy actions eliminated.' });
+    eliminated.add('Buy now');
+    eliminated.add('Buy on pullback');
+    eliminated.add('Hold / Watch');
+  } else {
+    log.push({ type: 'pass', msg: 'Segment slope: ' + s.slope.toUpperCase() + ' → Analysis continues.' });
+  }
+
+  // ── STEP 2 & 3: Trajectory Verdict ─────────────
+  let trajectoryVerdict = '';
+  let trajectoryClass = '';
+  let trajectorySub = '';
+
+  if (s.slope === 'negative') {
+    trajectoryVerdict = 'Negative';
+    trajectoryClass = 'negative';
+    trajectorySub = 'COPA halted';
+  } else if (s.slope === 'positive') {
+    if (s.position === 'below' || s.position === 'on') {
+      trajectoryVerdict = 'Positive';
+      trajectoryClass = 'positive';
+      trajectorySub = 'Money is structurally available';
+      log.push({ type: 'pass', msg: 'Slope positive + asset ' + s.position + ' slope → Positive trajectory alignment.' });
+    } else {
+      // above slope
+      trajectoryVerdict = 'Neutral';
+      trajectoryClass = 'neutral';
+      trajectorySub = 'Expectations pulled forward';
+      log.push({ type: 'flag', msg: 'Slope positive but asset priced ABOVE slope → trajectory reduced to Neutral. Immediacy eliminated.' });
+      eliminated.add('Buy now');
+    }
+  } else {
+    // neutral slope
+    trajectoryVerdict = 'Neutral';
+    trajectoryClass = 'neutral';
+    trajectorySub = 'Segment in consolidation / mixed signals';
+    log.push({ type: 'flag', msg: 'Segment slope NEUTRAL → trajectory capped at Neutral. "Buy now" eliminated.' });
+    eliminated.add('Buy now');
+  }
+
+  // ── STEP 4: Recency & Timing ────────────────────
+  if (!halted) {
+    if (s.recency === 'extended') {
+      log.push({ type: 'flag', msg: 'Recency: EXTENDED (run-up) → "Buy now" eliminated. Chasing risk elevated.' });
+      eliminated.add('Buy now');
+    } else if (s.recency === 'compressed') {
+      log.push({ type: 'pass', msg: 'Recency: COMPRESSED (pullback) → timing window may be present.' });
+    } else {
+      log.push({ type: 'pass', msg: 'Recency: NORMAL → no additional timing restriction from recency.' });
+    }
+  }
+
+  // ── STEP 5: Investor Constraint Gating ──────────
+  if (!halted) {
+
+    // Volatility incompatibility check
+    const volDrawdownCompatible = isVolDrawdownCompatible(s.volatility, s.drawdown);
+    if (!volDrawdownCompatible) {
+      incompatibilities.push(
+        'Expected asset volatility (' + s.volatility + ') exceeds your drawdown tolerance (' + s.drawdown + '). ' +
+        'This is a structurally incompatible position — you are likely to exit during normal drawdowns before the thesis resolves.'
+      );
+      log.push({ type: 'flag', msg: 'Volatility/drawdown mismatch: normal drawdowns likely exceed stated tolerance. "Buy now" and "Buy on pullback" restricted.' });
+      eliminated.add('Buy now');
+      eliminated.add('Buy on pullback');
+    } else {
+      log.push({ type: 'pass', msg: 'Drawdown tolerance compatible with expected asset volatility.' });
+    }
+
+    // Tactical + high volatility + compressed horizon = restrict
+    if (s.intent === 'tactical' && s.volatility === 'high' && s.horizon === 'short') {
+      log.push({ type: 'flag', msg: 'Tactical intent + high volatility + short horizon: entry precision is critical. "Buy now" restricted unless price is compressed.' });
+      if (s.recency !== 'compressed') {
+        eliminated.add('Buy now');
+      }
+    }
+
+    // Short horizon + slope not clearly positive = do not buy
+    if (s.horizon === 'short' && s.slope !== 'positive') {
+      log.push({ type: 'flag', msg: 'Short holding horizon with neutral segment slope: insufficient structural support for tactical entry.' });
+      eliminated.add('Buy now');
+      eliminated.add('Buy on pullback');
+    }
+
+    // Short horizon + positive slope + asset above slope = do not buy immediately
+    if (s.horizon === 'short' && s.slope === 'positive' && s.position === 'above') {
+      log.push({ type: 'flag', msg: 'Short horizon + asset priced above slope: mean-reversion risk within stated window. Immediate entry not admissible.' });
+      eliminated.add('Buy now');
+    }
+
+    // Account type friction note
+    if (s.account === 'taxable') {
+      log.push({ type: 'flag', msg: 'Taxable account: exits and rebalancing carry tax friction. This does not restrict actions but increases holding cost for short-horizon trades.' });
+    }
+
+    // Growth orientation + neutral trajectory = flag
+    if (s.orientation === 'growth' && trajectoryVerdict === 'Neutral') {
+      log.push({ type: 'flag', msg: 'Growth orientation + Neutral trajectory: sideways movement constitutes opportunity cost. "Buy now" restricted.' });
+      eliminated.add('Buy now');
+    }
+
+    // Neutral slope + low drawdown tolerance = no buy actions
+    if (s.slope === 'neutral' && s.drawdown === 'low') {
+      log.push({ type: 'flag', msg: 'Neutral slope + low drawdown tolerance: consolidation phases can include sharp temporary moves that would trigger involuntary exit. Buy actions restricted.' });
+      eliminated.add('Buy now');
+      eliminated.add('Buy on pullback');
+    }
+
+  }
+
+  // ── STEP 6 & 7: Action Space & Collapse ────────
+  // Determine final admissible actions
+  const admissible = allActions.filter(a => !eliminated.has(a));
+
+  // If trajectory is negative (halt), nothing is admissible except Do not buy
+  if (halted) {
+    eliminated.add('Hold / Watch');
+  }
+
+  // Time posture
+  let timePosture = '';
+  let timeSub = '';
+  if (s.horizon === 'short') { timePosture = 'Near-term'; timeSub = 'Under 3 months'; }
+  else if (s.horizon === 'mid') { timePosture = 'Mid-term'; timeSub = '3–12 months'; }
+  else { timePosture = 'Long-term'; timeSub = '12+ months'; }
+
+  // Position display
+  const posMap = { above: 'Above Slope', on: 'On Slope', below: 'Below Slope' };
+  const posSubMap = {
+    above: 'Expectations pulled forward',
+    on: 'Tracking segment direction',
+    below: 'Lagging — catch-up potential'
+  };
+
+  // Structural drivers
+  const drivers = buildDrivers(s);
+
+  // Change triggers
+  const triggers = buildTriggers(s, trajectoryVerdict);
+
+  return {
+    halted,
+    haltReason,
+    trajectoryVerdict,
+    trajectoryClass,
+    trajectorySub,
+    positionLabel: posMap[s.position] || '—',
+    positionSub: posSubMap[s.position] || '',
+    timePosture,
+    timeSub,
+    allActions,
+    eliminated,
+    admissible,
+    log,
+    incompatibilities,
+    drivers,
+    triggers,
+    assetId: s.assetId,
+    assetSegment: s.assetSegment
+  };
+}
+
+function isVolDrawdownCompatible(vol, drawdown) {
+  // low vol → compatible with all drawdown tolerances
+  if (vol === 'low') return true;
+  // medium vol → low drawdown is incompatible (medium vol typically 10-25%, low tolerance is 5-10%)
+  if (vol === 'medium' && drawdown === 'low') return false;
+  if (vol === 'medium') return true;
+  // high vol → only high drawdown tolerance is compatible
+  if (vol === 'high' && drawdown === 'high') return true;
+  if (vol === 'high') return false;
+  return true;
+}
+
+function buildDrivers(s) {
+  const d = [];
+  if (s.slope === 'positive') d.push('Segment structural drivers intact — directional momentum present');
+  if (s.slope === 'neutral') d.push('Segment in consolidation — no clear structural tailwind or headwind');
+  if (s.position === 'below') d.push('Asset lagging segment — potential catch-up compression');
+  if (s.position === 'above') d.push('Asset priced ahead of segment — forward expectations embedded');
+  if (s.position === 'on') d.push('Asset aligned with segment trajectory — no significant premium or discount');
+  if (s.recency === 'extended') d.push('Recent narrative intensity elevated — chasing premium present in price');
+  if (s.recency === 'compressed') d.push('Recent consolidation — entry timing window may be open');
+  if (s.intent === 'tactical') d.push('Tactical position intent — entry timing material to outcome');
+  if (s.intent === 'foundational') d.push('Foundational position intent — entry precision less critical than slope alignment');
+  if (s.narrative) d.push('Active narrative: ' + s.narrative.substring(0, 80) + (s.narrative.length > 80 ? '…' : ''));
+  return d.slice(0, 5);
+}
+
+function buildTriggers(s, verdict) {
+  const t = [];
+  if (s.slope === 'positive') {
+    t.push('Segment slope shifts to Neutral or Negative — re-run COPA immediately');
+  }
+  if (s.position === 'above') {
+    t.push('Asset pulls back to align with segment slope — reconsider entry timing');
+  }
+  if (s.position === 'below') {
+    t.push('Catalyst or structural change compresses lagging gap — monitor for timing shift');
+  }
+  if (s.recency === 'extended') {
+    t.push('Price consolidates and narrative intensity normalizes — timing window may reopen');
+  }
+  if (verdict === 'Neutral') {
+    t.push('Segment slope clarifies direction — rerun to determine if positive trajectory emerges');
+  }
+  t.push('Material change in policy, capital flows, or structural drivers within this segment');
+  return t.slice(0, 4);
+}
+
+// ── Render Output ──────────────────────────────────
+function renderOutput(r) {
+  const outputPanel = document.getElementById('output-panel');
+  outputPanel.style.display = 'block';
+
+  if (r.halted) {
+    // Show halt display only
+    const haltDiv = document.getElementById('halt-display');
+    haltDiv.style.display = 'block';
+    haltDiv.innerHTML =
+      '<div class="artifact-header" style="border-radius:8px;">' +
+        '<div class="artifact-type">COPA Decision Artifact — v2.0</div>' +
+        '<div class="artifact-asset">' + esc(r.assetId) + '</div>' +
+        '<div class="artifact-segment">' + esc(r.assetSegment) + '</div>' +
+      '</div>' +
+      '<div class="halt-banner" style="border-radius:0 0 8px 8px;">' +
+        '<div class="halt-label">COPA Halted — Step 1</div>' +
+        '<div class="halt-reason">' + esc(r.haltReason) + '</div>' +
+      '</div>' +
+      '<div style="margin-top:20px;padding:16px 0;border-top:1px solid #ddd;">' +
+        '<div class="as-label">Admissible Actions</div>' +
+        '<div class="action-list">' +
+          actionItem('Do not buy', true) +
+          actionItem('Buy now', false) +
+          actionItem('Buy on pullback', false) +
+          actionItem('Hold / Watch', false) +
+        '</div>' +
+      '</div>' +
+      '<div class="artifact-footer">This is a decision artifact, not a prediction or a recommendation.</div>';
+    return;
+  }
+
+  // Full artifact
+  document.getElementById('artifact-display').style.display = 'block';
+  document.getElementById('out-asset').textContent = r.assetId;
+  document.getElementById('out-segment').textContent = r.assetSegment;
+
+  // Trajectory
+  const tv = document.getElementById('out-trajectory');
+  tv.textContent = r.trajectoryVerdict + ' Alignment';
+  tv.className = 'ic-value ' + r.trajectoryClass;
+  document.getElementById('out-trajectory-sub').textContent = r.trajectorySub;
+
+  // Position
+  const pv = document.getElementById('out-position-display');
+  const posClass = r.positionLabel.toLowerCase().includes('above') ? 'neutral'
+                 : r.positionLabel.toLowerCase().includes('below') ? 'positive' : '';
+  pv.className = 'ic-value ' + posClass;
+  pv.textContent = r.positionLabel;
+  document.getElementById('out-position-sub').textContent = r.positionSub;
+
+  // Time posture
+  document.getElementById('out-time-posture').textContent = r.timePosture;
+  document.getElementById('out-time-sub').textContent = r.timeSub;
+
+  // Actions
+  const actionsEl = document.getElementById('out-actions');
+  actionsEl.innerHTML = r.allActions.map(a =>
+    actionItem(a, !r.eliminated.has(a))
+  ).join('');
+
+  // Incompatibility notices
+  const incompEl = document.getElementById('out-incompatibility');
+  if (r.incompatibilities.length > 0) {
+    incompEl.innerHTML = r.incompatibilities.map(i =>
+      '<div class="incompatibility-notice">⚠ ' + esc(i) + '</div>'
+    ).join('');
+  }
+
+  // Constraint log
+  const logEl = document.getElementById('out-constraint-log');
+  logEl.innerHTML = r.log.map(entry => {
+    const cls = entry.type === 'pass' ? 'clog-pass' : entry.type === 'halt' ? 'clog-halt' : 'clog-flag';
+    const prefix = entry.type === 'pass' ? '✓' : entry.type === 'halt' ? '✗' : '△';
+    return '<div class="' + cls + '">' + prefix + ' ' + esc(entry.msg) + '</div>';
+  }).join('');
+
+  // Drivers
+  const driverEl = document.getElementById('out-drivers');
+  driverEl.innerHTML = r.drivers.map(d =>
+    '<li>' + esc(d) + '</li>'
+  ).join('');
+
+  // Triggers
+  const triggerEl = document.getElementById('out-triggers');
+  triggerEl.innerHTML = r.triggers.map(t =>
+    '<li>' + esc(t) + '</li>'
+  ).join('');
+}
+
+function actionItem(label, isAdmissible) {
+  const cls = isAdmissible ? 'admissible' : 'eliminated';
+  return '<div class="action-item ' + cls + '">' +
+    '<div class="action-dot"></div>' +
+    '<span>' + esc(label) + '</span>' +
+  '</div>';
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Reset ──────────────────────────────────────────
+function resetCOPA() {
+  document.getElementById('output-panel').style.display = 'none';
+  document.getElementById('halt-display').style.display = 'none';
+  document.getElementById('artifact-display').style.display = 'none';
+  document.getElementById('progress-bar').style.display = 'flex';
+
+  // Clear inputs
+  document.getElementById('asset-id').value = '';
+  document.getElementById('asset-segment').value = '';
+  document.getElementById('asset-price-context').value = '';
+  document.getElementById('asset-narrative').value = '';
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  // Re-check defaults
+  document.querySelector('input[name="account"][value="unspecified"]').checked = true;
+  document.querySelector('input[name="orientation"][value="neutral"]').checked = true;
+
+  // Clear radio highlights
+  document.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+
+  goTo(1);
+}
+
+// ── Radio highlight on select ──────────────────────
+document.querySelectorAll('.radio-group').forEach(group => {
+  group.querySelectorAll('input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+      radio.closest('.radio-option').classList.add('selected');
+    });
+  });
+});
+
+// Initialize: mark any pre-checked radios
+document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+  radio.closest('.radio-option').classList.add('selected');
+});
+
+</script>
+</body>
+</html>
